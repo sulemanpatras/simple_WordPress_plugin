@@ -64,7 +64,72 @@ function custom_post_type() {
 	);
 	register_post_type( 'events', $args );
 
-	
+	// Add custom meta box for date, time, and location
+	add_action( 'add_meta_boxes', 'add_event_meta_box' );
+	function add_event_meta_box() {
+		add_meta_box(
+			'event_details_meta_box', // Meta box ID
+			'Event Details', // Title
+			'event_details_meta_box_callback', // Callback function
+			'events', // Post type
+			'normal', // Context
+			'default' // Priority
+		);
+	}
+
+	// Callback function to display fields in meta box
+	function event_details_meta_box_callback( $post ) {
+		wp_nonce_field( 'event_details_meta_box', 'event_details_meta_box_nonce' );
+
+		$date = get_post_meta( $post->ID, 'event_date', true );
+		$time = get_post_meta( $post->ID, 'event_time', true );
+		$location = get_post_meta( $post->ID, 'event_location', true );
+
+		echo '<label for="event_date">Event Date:</label>';
+		echo '<input type="date" id="event_date" name="event_date" value="' . esc_attr( $date ) . '" /><br>';
+
+		echo '<label for="event_time">Event Time:</label>';
+		echo '<input type="time" id="event_time" name="event_time" value="' . esc_attr( $time ) . '" /><br>';
+
+		echo '<label for="event_location">Event Location:</label>';
+		echo '<input type="text" id="event_location" name="event_location" value="' . esc_attr( $location ) . '" />';
+	}
+
+	// Save meta box data
+	add_action( 'save_post', 'save_event_meta_box_data' );
+	function save_event_meta_box_data( $post_id ) {
+		if ( ! isset( $_POST['event_details_meta_box_nonce'] ) ) {
+			return;
+		}
+
+		if ( ! wp_verify_nonce( $_POST['event_details_meta_box_nonce'], 'event_details_meta_box' ) ) {
+			return;
+		}
+
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+
+		if ( isset( $_POST['post_type'] ) && 'events' != $_POST['post_type'] ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
+		if ( isset( $_POST['event_date'] ) ) {
+			update_post_meta( $post_id, 'event_date', sanitize_text_field( $_POST['event_date'] ) );
+		}
+
+		if ( isset( $_POST['event_time'] ) ) {
+			update_post_meta( $post_id, 'event_time', sanitize_text_field( $_POST['event_time'] ) );
+		}
+
+		if ( isset( $_POST['event_location'] ) ) {
+			update_post_meta( $post_id, 'event_location', sanitize_text_field( $_POST['event_location'] ) );
+		}
+	}
 }
 add_action( 'init', 'custom_post_type', 0 );
 

@@ -133,6 +133,63 @@ function custom_post_type() {
 }
 add_action( 'init', 'custom_post_type', 0 );
 
+// Register shortcode to display events
+add_shortcode('display_events', 'display_events_shortcode');
+
+function display_events_shortcode($atts) {
+    // Default attributes
+    $atts = shortcode_atts(array(
+        'posts_per_page' => -1, // -1 to display all events, change as needed
+        'order' => 'DESC', // Order of events, change as needed
+        'orderby' => 'date', // Order by date, change as needed
+    ), $atts, 'display_events');
+
+    // Query events
+    $events_query = new WP_Query(array(
+        'post_type' => 'events', // Custom post type name
+        'posts_per_page' => $atts['posts_per_page'],
+        'order' => $atts['order'],
+        'orderby' => $atts['orderby'],
+    ));
+
+    // Output events
+    $output = '<div class="events-list">';
+    if ($events_query->have_posts()) {
+        while ($events_query->have_posts()) {
+            $events_query->the_post();
+            // Get event details
+            $date = get_post_meta(get_the_ID(), 'event_date', true);
+            $time = get_post_meta(get_the_ID(), 'event_time', true);
+            $location = get_post_meta(get_the_ID(), 'event_location', true);
+
+            // Format event details
+            $event_details = '';
+            if ($date) {
+                $event_details .= '<p><strong>Event Date:</strong> ' . esc_html($date) . '</p>';
+            }
+            if ($time) {
+                $event_details .= '<p><strong>Event Time:</strong> ' . esc_html($time) . '</p>';
+            }
+            if ($location) {
+                $event_details .= '<p><strong>Event Location:</strong> ' . esc_html($location) . '</p>';
+            }
+
+            // Output event content
+            $output .= '<div class="event">';
+            $output .= '<h2>' . get_the_title() . '</h2>';
+            $output .= '<div class="event-details">' . $event_details . '</div>';
+            $output .= '<div class="event-content">' . get_the_content() . '</div>';
+            $output .= '</div>';
+        }
+        wp_reset_postdata(); // Restore global post data
+    } else {
+        $output .= '<p>No events found.</p>';
+    }
+    $output .= '</div>';
+
+    return $output;
+}
+
 
     
 
